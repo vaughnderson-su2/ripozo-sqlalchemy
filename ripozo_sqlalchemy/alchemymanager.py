@@ -289,6 +289,9 @@ class AlchemyManager(BaseManager):
         if isinstance(model, (list, set)):
             return [self.serialize_model(m, field_dict=field_dict) for m in model]
 
+        if isinstance(model, (MappedCollection)):
+            return [self.serialize_model(m, field_dict=field_dict) for key, m in model.items()]
+
         model_dict = {}
         for name, sub in six.iteritems(field_dict):
             value = getattr(model, name)
