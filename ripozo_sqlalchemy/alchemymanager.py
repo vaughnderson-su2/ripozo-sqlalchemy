@@ -19,6 +19,7 @@ from ripozo.utilities import make_json_safe
 
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.query import Query
+from sqlalchemy.orm.collections import MappedCollection
 
 import logging
 import six
