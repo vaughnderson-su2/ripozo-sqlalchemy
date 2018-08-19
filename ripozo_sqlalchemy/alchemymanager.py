@@ -99,15 +99,36 @@ class AlchemyManager(BaseManager):
         :return: The python type of the column
         :rtype: type
         """
+        models = [ model ]
         try:
-            return getattr(model, name).property.columns[0].type.python_type
-        except AttributeError:  # It's a relationship
-            parts = name.split('.')
-            model = getattr(model, parts.pop(0)).comparator.mapper.class_
-            return AlchemyManager._get_field_python_type(model, '.'.join(parts))
-        except NotImplementedError:
-            # This is for pickle type columns.
-            return object
+            if model.__mapper_args__['with_polymorphic']:
+                if model.__mapper_args__['with_polymorphic'] == '*':
+                    models.extend( model.__subclasses__() )
+                else:
+                    models.extend( model.__mapper_args__.with_polymorphic)
+        except AttributeError:
+            pass
+
+        errors = []
+        for model in models:
+            try: 
+                return getattr(model, name).property.columns[0].type.python_type
+            except AttributeError as e:
+                errors.append(e)
+            except NotImplementedError:
+                return object
+
+        # Try looking for a relationship
+        for model in models:
+            try:
+                parts = name.split('.')
+                model = getattr(model, parts.pop(0)).comparator.mapper.class_
+                return AlchemyManager._get_field_python_type(model, '.'.join(parts))
+            except AttributeError as e:
+                errors.append(e)
+
+        # Reraise the first error if unsuccessful
+        raise errors.first()
 
     @classmethod
     def get_field_type(cls, name):
