@@ -316,11 +316,40 @@ class AlchemyManager(BaseManager):
 
         model_dict = {}
         for name, sub in six.iteritems(field_dict):
-            value = getattr(model, name)
+            try:
+                value = getattr(model, name)
+            except AttributeError as e: # Check if this is a polymorphic subclass
+                try:
+                    if self._polymorphic_sibling_has_field(model, name):
+                       continue # Ignore the missing attribute if present on a sibling class    
+                    else:
+                        raise e
+                except:
+                    raise e
             if sub:
                 value = self.serialize_model(value, field_dict=sub)
             model_dict[name] = value
         return model_dict
+
+    def _polymorphic_sibling_has_field(self, model, name):
+        base_polymorphic = model.__class__.__base__.__mapper_args__['with_polymorphic']
+        
+        if not base_polymorphic == '*' and not model.__class__ in base_polymorphic:
+            return false
+        
+        if (base_polymorphic == '*'):
+            models = model.__class__.__base__.__subclasses__()
+        else:
+            models = base_polymorphic
+                            
+        for m in models:
+            try:
+                if getattr(m, name):
+                    return True
+            except AttributeError:
+                pass
+
+        return False
 
     def _get_model(self, lookup_keys, session):
         """
