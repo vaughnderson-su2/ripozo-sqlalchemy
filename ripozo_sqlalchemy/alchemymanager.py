@@ -128,7 +128,7 @@ class AlchemyManager(BaseManager):
                 errors.append(e)
 
         # Reraise the first error if unsuccessful
-        raise errors.first()
+        raise errors[0]
 
     @classmethod
     def get_field_type(cls, name):
